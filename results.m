@@ -14,12 +14,15 @@ function results(sensor_noise,movement_noise,num_sims)
 	%loop for the required number of simulations
 	for i=1:num_sims
 
-		fprintf('========= SIMULATION %i =========\n',i);
-
 		%Store outputs from trinity02 function in array
 		%   Cycles      |  Travel Dist  |     Goal      |   Obs. Crash  |   Wall Crash  |
 		[result_tab(i,1),result_tab(i,2),result_tab(i,3),result_tab(i,4),result_tab(i,5)] = trinity02(sensor_noise,movement_noise);
-		
+		clc;
+
+		progress = floor(i/num_sims*100);
+
+		fprintf('============ SIMULATING: %i%% ============\n',progress);
+
 		%If goal is reached...
 		if result_tab(i,3)==1
 			%...with no collisions, add 1 to successes
@@ -31,7 +34,10 @@ function results(sensor_noise,movement_noise,num_sims)
 			end
 		end
 	end
-	
+
+	clc;
+	fprintf('================ COMPLETE ================\n',progress);
+
 	%Calculate and display success rate
 	success_rate = successes/num_sims;
 	success_pc = 100*success_rate;
@@ -47,7 +53,7 @@ function results(sensor_noise,movement_noise,num_sims)
 	avg_cyc_overall = (avg_cyc_with_crashes + avg_cyc_no_crashes)/2;
 
 	%Print final results
-	fprintf('========= RESULTS AFTERT %i SIMULATION =========\n',i);
+	fprintf('========= RESULTS AFTERT %i SIMULATIONS =========\n',i);
 	fprintf('=== No Crashes ===\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',success_pc,avg_cyc_no_crashes);
 	fprintf('== With Crashes ==\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',kinda_success_pc,avg_cyc_with_crashes);
 	fprintf('==== Overall =====\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',overall_pc,avg_cyc_overall);

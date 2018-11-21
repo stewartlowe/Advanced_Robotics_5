@@ -782,8 +782,8 @@ for t = 0:dt:100
 end  % endre of 't' FOR LOOP
 
 % display final status results to the command window
-fprintf('total distance travelled: %6.2f    odometry: (%6.2f, %6.2f)    final position - x: %5.2f  y: %5.2f  theta: %6.2f\n',total_travel_dist,odometry(1),odometry(2),vehicle_pos(1),vehicle_pos(2),vehicle_pos(3));
-fprintf('computation cycles: %4i    goal reached: %1i     obstacle crashes: %3i    wall crashes: %i\n',computation_cycles,goal_reached,num_crashes,wall_crashes);
+%fprintf('total distance travelled: %6.2f    odometry: (%6.2f, %6.2f)    final position - x: %5.2f  y: %5.2f  theta: %6.2f\n',total_travel_dist,odometry(1),odometry(2),vehicle_pos(1),vehicle_pos(2),vehicle_pos(3));
+%fprintf('computation cycles: %4i    goal reached: %1i     obstacle crashes: %3i    wall crashes: %i\n',computation_cycles,goal_reached,num_crashes,wall_crashes);
 %wall_crashes
 
 end % end of the 'trinity02.m' function
