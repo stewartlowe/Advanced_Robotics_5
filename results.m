@@ -16,7 +16,7 @@ function results(sensor_noise,movement_noise,num_sims)
 
 		%Store outputs from trinity02 function in array
 		%   Cycles      |  Travel Dist  |     Goal      |   Obs. Crash  |   Wall Crash  |
-		[result_tab(i,1),result_tab(i,2),result_tab(i,3),result_tab(i,4),result_tab(i,5)] = trinity02(sensor_noise,movement_noise);
+		[result_tab(i,1),result_tab(i,2),result_tab(i,3),result_tab(i,4),result_tab(i,5),result_tab(i,6)] = trinity02(sensor_noise,movement_noise);
 		clc;
 
 		progress = floor(i/num_sims*100);
