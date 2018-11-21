@@ -21,7 +21,7 @@ function results(sensor_noise,movement_noise,num_sims)
 
 		progress = floor(i/num_sims*100);
 
-		fprintf('============ SIMULATING: %i%% ============\n',progress);
+		fprintf('=============== SIMULATING: %i%% ================\n',progress);
 
 		%If goal is reached...
 		if result_tab(i,3)==1
@@ -36,7 +36,7 @@ function results(sensor_noise,movement_noise,num_sims)
 	end
 
 	clc;
-	fprintf('================ COMPLETE ================\n',progress);
+	fprintf('==================== COMPLETE ===================\n',progress);
 
 	%Calculate and display success rate
 	success_rate = successes/num_sims;
@@ -53,9 +53,9 @@ function results(sensor_noise,movement_noise,num_sims)
 	avg_cyc_overall = (avg_cyc_with_crashes + avg_cyc_no_crashes)/2;
 
 	%Print final results
-	fprintf('========= RESULTS AFTERT %i SIMULATIONS =========\n',i);
-	fprintf('=== No Crashes ===\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',success_pc,avg_cyc_no_crashes);
-	fprintf('== With Crashes ==\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',kinda_success_pc,avg_cyc_with_crashes);
-	fprintf('==== Overall =====\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',overall_pc,avg_cyc_overall);
+	fprintf('========= RESULTS AFTER %i SIMULATIONS =========\n',i);
+	fprintf('------------------- No Crashes -------------------\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',success_pc,avg_cyc_no_crashes);
+	fprintf('------------------ With Crashes ------------------\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',kinda_success_pc,avg_cyc_with_crashes);
+	fprintf('-------------------- Overall ---------------------\nSuccess Rate: %5.2f%% Average No. of Cycles: %5.2f\n',overall_pc,avg_cyc_overall);
 	
 end
