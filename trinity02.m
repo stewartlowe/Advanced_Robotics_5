@@ -346,6 +346,7 @@ for t = 0:dt:100
   sensor_hist(2,:) = sensor_hist(1,:);
   sensor_hist(1,:) = sensor_dist;  
   
+  %{
   %PLOTTING
   
   fig = figure(1);
@@ -439,8 +440,8 @@ for t = 0:dt:100
     %}
     if vehicle_pos(1) < 1+vehicle_size || vehicle_pos(1) > max_grid-vehicle_size || vehicle_pos(2) < 1+vehicle_size || vehicle_pos(2) > max_grid-vehicle_size
       wall_crashes = 1;
-      text(31,max_grid/2,'WALL CRASH!','FontSize',40,'Color','r');
-      drawnow;
+      %text(31,max_grid/2,'WALL CRASH!','FontSize',40,'Color','r');
+      %drawnow;
       break
     end
     % check if the vehicle has collided with an obtacle
@@ -448,22 +449,22 @@ for t = 0:dt:100
       for c=floor(vehicle_pos(1)-vehicle_size):ceil(vehicle_pos(1)+vehicle_size)
         if arena(r,c)==3
           num_crashes = num_crashes + 1;
-          text(15,max_grid/2,'OBSTACLE CRASH!','FontSize',40,'Color','r');
-          drawnow;
+          %text(15,max_grid/2,'OBSTACLE CRASH!','FontSize',40,'Color','r');
+          %drawnow;
           break
         end
       end
     end
     % check if the goal has been reached, but only for modes with
     % goal-seeking sensors active
-    %}
     if sensor_dist(LD_FRONT)<sensors(LD_FRONT,2) && sensor_dist(FL_LEFT)<sensors(FL_LEFT,2) && sensor_dist(FL_RIGHT)<sensors(FL_RIGHT,2)
-      text(27,max_grid/2,'GOAL REACHED!','FontSize',40,'Color','r');
+      %text(27,max_grid/2,'GOAL REACHED!','FontSize',40,'Color','r');
       goal_reached = 1;
       break;
     end
     
-    drawnow; % force the plot to be drawn, depsite the tight calculation loop
+    %drawnow; % force the plot to be drawn, depsite the tight calculation loop
+    
   
   if movie==1  % if the movie flag is set, add figure frames to the movie file
     % save multiple copies of the current plot to the video file to
@@ -473,7 +474,7 @@ for t = 0:dt:100
       writeVideo(vid,img);
     end
   end
-  %}
+  %
 
   
   
@@ -567,7 +568,7 @@ for t = 0:dt:100
   end
   
   %initiate ccw rotation to locate the candle
-  if control_step==7 && sensor_dist(IR_FRONT) < hallway_width/2
+  if control_step==7 && sensor_dist(IR_FRONT) < 15
     speed = [-0.5  0.5];
     control_step = 8;
   end
@@ -638,7 +639,7 @@ for t = 0:dt:100
   end
 
   %when doorway is reached, begin cw rotation
-  if control_step==19 && sensor_dist(IR_FRONT) < 10
+  if control_step==19 && sensor_dist(IR_FRONT) < 15
     speed = [0.5 -0.5];
     control_step = 20;
   end
@@ -701,18 +702,6 @@ for t = 0:dt:100
       control_step = 10;
     end
   end
-  
-  % ADD FURTHER CONTROL ACTION STEPS HERE TO:
-  %  -  Exit the floating room
-  %  -  Navigate to the northwest room
-  %  -  Search for the candle
-  %  -
-  %  -  ... Search other rooms
-
-
-
-
-
 
   % set the normalised speed values into motor/wheel speeds
   speed = speed * max_speed;
@@ -793,9 +782,9 @@ for t = 0:dt:100
 end  % endre of 't' FOR LOOP
 
 % display final status results to the command window
-%fprintf('total distance travelled: %6.2f    odometry: (%6.2f, %6.2f)    final position - x: %5.2f  y: %5.2f  theta: %6.2f\n',total_travel_dist,odometry(1),odometry(2),vehicle_pos(1),vehicle_pos(2),vehicle_pos(3));
-%fprintf('computation cycles: %4i    goal reached: %1i     obstacle crashes: %3i    wall crashes: %i\n',computation_cycles,goal_reached,num_crashes,wall_crashes);
-wall_crashes
+fprintf('total distance travelled: %6.2f    odometry: (%6.2f, %6.2f)    final position - x: %5.2f  y: %5.2f  theta: %6.2f\n',total_travel_dist,odometry(1),odometry(2),vehicle_pos(1),vehicle_pos(2),vehicle_pos(3));
+fprintf('computation cycles: %4i    goal reached: %1i     obstacle crashes: %3i    wall crashes: %i\n',computation_cycles,goal_reached,num_crashes,wall_crashes);
+%wall_crashes
 
 end % end of the 'trinity02.m' function
 
