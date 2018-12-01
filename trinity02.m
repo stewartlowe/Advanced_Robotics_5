@@ -108,7 +108,7 @@ vehicle_pos = [c,r,90];  % 'home' position facing north
 %   associated surroundling line (upper-case same letter) to '1' for a 'line' object
 % . otherwise, change the letter to '0' and also any associated line objects to '0'
 %goal_val = double('a') + round(rand*9,0);  % random goal position - ASCII value of the goal position letter
-goal_val = double('b');  % choose a fixed goal position for debugging purposes, position 'b'
+goal_val = double('d');  % choose a fixed goal position for debugging purposes, position 'b'
 for g = double('a'):double('j')
   if (goal_val==g)
     arena_str(arena_str==char(g)) = '2';
@@ -228,6 +228,18 @@ end
 % 'control_step' is a variable to progress through the various stages of
 % reaching the first room
 control_step = 1;
+%define control step vairables reserved for searching control steps
+cw = 0;
+ccw = -1;
+fwd = -2;
+fnd = -3;
+
+%defince 'step' variable to prevent code from entering earlier control steps
+step = 0;
+
+%define speeds for cw and ccw rotations
+rot_cw  = [0.5 -0.5];
+rot_ccw = [-0.5 0.5];
 
 % SIMULATION LOOP
 %
@@ -540,14 +552,18 @@ for t = 0:dt:100
     end
   end
 
+  %================== First turn in NE corner of arena ==================
+
   %When north wall is reached, turn ccw
   if control_step==1 && sensor_dist(IR_FRONT) < (hallway_width/2) %15
-    speed = [-0.4 0.4];
+    speed = 0.8*rot_ccw;
     control_step = 2;
   end
   if control_step==2
-    speed = [-0.4  0.4];
+    speed = 0.8*rot_ccw;
   end
+
+  %======================== Move along N corridor =======================
   
   %When facing west, go straight
   if control_step==2 && (test_ir_trend(IR_REAR,sensor_hist) + test_ir_trend(IR_RIGHT,sensor_hist)) > 0 && sensor_dist(IR_LEFT) > 36 && sensor_dist(IR_FRONT) > 36
@@ -558,6 +574,8 @@ for t = 0:dt:100
   if control_step==3 && sensor_dist(IR_LEFT) < 25 && sensor_dist(IR_REAR) > 11
     control_step = 4;
   end
+
+  %======================= Turn into floating room ======================
   
   %When doorway is reached, start sweeping turn into floating room
   if control_step==4 && sensor_dist(IR_LEFT) > 20 && sensor_dist(IR_REAR) > 30
@@ -569,40 +587,82 @@ for t = 0:dt:100
   
   %begin ccw rotation when front sensor sees doorway
   if control_step==5 && sensor_dist(IR_FRONT) < 15
-    speed = [-0.4  0.4];
+    speed = 0.8*rot_ccw;
     control_step = 6;
   end
   if control_step==6
-    speed = [-0.4  0.4];
+    speed = 0.8*rot_ccw;
   end
+
+  %==================== Moving S into floating room =====================
   
   %end rotation when facing south
   if control_step==6 && test_ir_trend(IR_REAR,sensor_hist) && sensor_dist(IR_FRONT) > 25
     control_step = 7;
   end
+
+  %================== Finding candles in floating room =====================
   
-  %initiate ccw rotation to locate the candle
-  if control_step==7 && sensor_dist(IR_FRONT) < hallway_width/2
-    speed = [-0.5  0.5];
-    control_step = 8;
+  %initiate cw rotation to locate candle 'c'
+  if control_step==7 && sensor_dist(IR_FRONT) < 18
+    speed = rot_cw;
+    step = control_step;
+    control_step = cw;
   end
 
-  %continue rotation when front sensor sees door
-  if control_step==8 && sensor_dist(IR_FRONT) > 30
-    speed = [-0.5 0.5];
+  %reverse rotation if no candle is found at 'c'
+  if step==7 && neg_test_ir_trend(IR_FRONT,sensor_hist)
+    speed = rot_ccw;
+    control_step = 8;
+  end
+  if control_step==8
+    speed = rot_ccw;
+  end
+
+  %when facing south, begin ccw search for candle 'd'
+  if control_step==8 && (test_ir_trend(IR_REAR,sensor_hist)+test_ir_trend(IR_FRONT,sensor_hist)) > 0
+    step = control_step;
+    control_step = ccw;
+  end
+
+  %=================== Moving out of the foating room =======================
+
+  %When the door of the floating room is seen by the robot, advance the control step and coninue rotation
+  if control_step==ccw && step==8 && sensor_dist(IR_FRONT) > 30
+    speed = rot_ccw;
+    control_step = 9;
+  end
+  if control_step==9
+    speed = rot_ccw;
+  end
+
+  %When facing north, move out of the room
+  if control_step==9 && test_ir_trend(IR_REAR,sensor_hist)
+    control_step = 10;
+  end
+
+  %================= Turning to face W along N corridor =====================
+
+  %When robot is in corridor, initiate ccw rotation
+  if control_step==10 && sensor_dist(IR_FRONT) < hallway_width/2
+    speed = rot_ccw;
     control_step = 11;
   end
   if control_step==11
-    speed = [-0.5 0.5];
+    speed = rot_ccw;
   end
 
-  %when facing north, go straight
-  if control_step==11 && (test_ir_trend(IR_RIGHT,sensor_hist)+test_ir_trend(IR_REAR,sensor_hist)) > 0
+  %================= Moving west along to N/S corridor =====================
+
+  %when facing west, go straight
+  if control_step==11 && test_ir_trend(IR_RIGHT,sensor_hist) && sensor_dist(IR_REAR) > 20
     control_step = 12;
   end
 
-  %when hallway is reached, begin ccw rotation
-  if control_step==12 && sensor_dist(IR_FRONT) < hallway_width/2
+  %========= Turning to face S at junction on N and N/S corridor ===========
+
+  %when end of hallway is reahed, begin ccw rotation
+  if control_step==12 && sensor_dist(IR_FRONT) < hallway_width/2 && sensor_dist(IR_LEFT) > 36
     speed = [-0.5 0.5];
     control_step = 13;
   end
@@ -610,110 +670,162 @@ for t = 0:dt:100
     speed = [-0.5 0.5];
   end
 
-  %when facing west, go straight
-  if control_step==13 && test_ir_trend(IR_RIGHT,sensor_hist) && sensor_dist(IR_REAR) > 20
+  %====================== Moving S down N/S corridor =======================
+
+  %when facing south go straight
+  if control_step==13 && (test_ir_trend(IR_RIGHT,sensor_hist) + test_ir_trend(IR_REAR,sensor_hist)) > 0 && sensor_dist(IR_LEFT) > 20 && sensor_dist(IR_FRONT) > 20
     control_step = 14;
   end
 
-  %when end of hallway is reahed, begin ccw rotation
-  if control_step==14 && sensor_dist(IR_FRONT) < hallway_width/2 && sensor_dist(IR_LEFT) > 36
-    speed = [-0.5 0.5];
+  %====================== Navigating upper T junction ======================
+
+  %begin large radius turn when t junction is reached
+  if control_step==14 && sensor_dist(IR_RIGHT) > 20
     control_step = 15;
   end
   if control_step==15
-    speed = [-0.5 0.5];
-  end
-
-  %when facing south go straight
-  if control_step==15 && (test_ir_trend(IR_RIGHT,sensor_hist) + test_ir_trend(IR_REAR,sensor_hist)) > 0 && sensor_dist(IR_LEFT) > 20 && sensor_dist(IR_FRONT) > 20
-    control_step = 16;
-  end
-
-  %begin large radius turn when t junction is reached
-  if control_step==16 && sensor_dist(IR_RIGHT) > 20
-    control_step = 17;
-  end
-  if control_step==17
     speed = [0.9 0.1];
   end
 
   %begin cw rotation when opposite corner is seen
-  if control_step==17 && test_ir_trend(IR_FRONT,sensor_hist)
-    speed = [0.5 -0.5];
+  if control_step==15 && test_ir_trend(IR_FRONT,sensor_hist)
+    speed = rot_cw;
+    control_step = 16;
+  end
+  if control_step==16
+    speed = rot_cw;
+  end
+
+  %====================== Moving along W corridor =========================
+
+  %when facing west, go straight
+  if control_step==16 && test_ir_trend(IR_REAR,sensor_hist) && sensor_dist(IR_FRONT) > 30 % && sensor_dist(IR_LEFT) > 20
+    speed = [1 1];
+    control_step = 17;
+  end
+
+  %======================= Turning into NW room ===========================
+
+  %when doorway is reached, begin cw rotation
+  if control_step==17 && sensor_dist(IR_FRONT) < 15
+    speed = rot_cw;
     control_step = 18;
   end
   if control_step==18
-    speed = [0.5 -0.5];
-  end
-
-  %when facing west, go straight
-  if control_step==18 && test_ir_trend(IR_REAR,sensor_hist) && sensor_dist(IR_FRONT) > 30 % && sensor_dist(IR_LEFT) > 20
-    speed = [1 1];
-    control_step = 19;
-  end
-
-  %when doorway is reached, begin cw rotation
-  if control_step==19 && sensor_dist(IR_FRONT) < 10
-    speed = [0.5 -0.5];
-    control_step = 20;
+    speed = rot_cw;
   end
 
   %When facing into room, advance control step
-  if control_step==20 && sensor_dist(IR_FRONT) > 20
-    speed = [0.5 -0.5];
-    control_step = 21;
+  if control_step==18 && sensor_dist(IR_FRONT) > 20
+    speed = rot_cw;
+    control_step = 19;
   end
-  if control_step==20 || control_step==21
-    speed = [0.5 -0.5];
+  if control_step==19
+    speed = rot_cw;
   end
 
   %When facing north go straight
-  if control_step==21 && (test_ir_trend(IR_REAR,sensor_hist) + test_ir_trend(IR_LEFT,sensor_hist)) > 0
-    control_step = 22;
+  if control_step==19 && (test_ir_trend(IR_REAR,sensor_hist) + test_ir_trend(IR_LEFT,sensor_hist)) > 0
+    control_step = 20;
   end
 
-  %When fully in room, initiate turn to search for candle
-  if control_step==22 && sensor_dist(IR_FRONT) < hallway_width/2
-    speed = [0.25 -0.25];
+  %====================== Find candles in NW room ========================
+
+  %When fully in room, initiate turn to search for candle 'a'
+  if control_step==20 && sensor_dist(IR_FRONT) < 18
+    speed = rot_ccw;
+    step = control_step;
+    control_step = ccw;
+  end
+
+  %If no candle at 'a', reverse turn towards 'b'
+  if step==20 && control_step==ccw && neg_test_ir_trend(IR_FRONT,sensor_hist)
+    speed = rot_ccw;
+    control_step = 21;
+  end
+  if control_step==21
+    speed = rot_ccw;
+  end
+
+  %When facing N, begin searching for candle 'b'
+  if control_step==21 && test_ir_trend(IR_FRONT,sensor_hist)
+    step = control_step;
+    control_step = cw;
+  end
+
+  %================= Leave NW room if no candles found ===================
+
+  %When doorway is seen, advanve control step
+  if step==21 && control_step==cw && sensor_dist(IR_FRONT) > 30
+    speed = rot_cw;
+    control_step = 22;
+  end
+  if control_step==22
+    speed = rot_cw;
+  end
+
+  %When facing south, move into corridor
+  if control_step==22 && (test_ir_trend(IR_REAR,sensor_hist)+test_ir_trend(IR_RIGHT,sensor_hist)) > 0
     control_step = 23;
   end
 
+  %================== Turn to face E along W corridor ====================
+
+  %When hallway is reached, initiate ccw turn
+  if control_step==23 && sensor_dist(IR_FRONT) < hallway_width/2
+    speed = rot_ccw;
+    control_step = 24;
+  end
+  if control_step==24
+    speed = rot_ccw;
+  end
+
+  %====================== Move E along W corridor ========================
+
+  %When facing E, go straight
+
+
+
+  %========================= Search for candle ===========================
+
+  %Control step = cw for cw rotation, control step = ccw for ccw rotation
+
   % continue turning anticlockwise whilst both flame sensors don't see the candle
-  if control_step==8 && sensor_dist(FL_LEFT) > sensors(FL_LEFT,2) && sensor_dist(FL_RIGHT) > sensors(FL_RIGHT,2)
+  if control_step==ccw && sensor_dist(FL_LEFT) > sensors(FL_LEFT,2) && sensor_dist(FL_RIGHT) > sensors(FL_RIGHT,2)
     speed = [-0.25  0.25];
   end
-  if control_step==23 && sensor_dist(FL_LEFT) > sensors(FL_LEFT,2) && sensor_dist(FL_RIGHT) > sensors(FL_RIGHT,2)
+  if control_step==cw && sensor_dist(FL_LEFT) > sensors(FL_LEFT,2) && sensor_dist(FL_RIGHT) > sensors(FL_RIGHT,2)
     speed = [0.25  -0.25];
   end
   
   % continue turning anticlockwise whilst one of the flame sensors doesn't see the candle
-  if control_step==8 && (sensor_dist(FL_LEFT) < sensors(FL_LEFT,2) || sensor_dist(FL_RIGHT) < sensors(FL_RIGHT,2))
+  if control_step==ccw && (sensor_dist(FL_LEFT) < sensors(FL_LEFT,2) || sensor_dist(FL_RIGHT) < sensors(FL_RIGHT,2))
     speed = [-0.25  0.25];
-    control_step = 9;
+    control_step = fwd;
   end
-  if control_step==23 && (sensor_dist(FL_LEFT) < sensors(FL_LEFT,2) || sensor_dist(FL_RIGHT) < sensors(FL_RIGHT,2))
+  if control_step==cw && (sensor_dist(FL_LEFT) < sensors(FL_LEFT,2) || sensor_dist(FL_RIGHT) < sensors(FL_RIGHT,2))
     speed = [0.25  -0.25];
-    control_step = 9;
+    control_step = fwd;
   end
   
   % advance the control step if both flame sensors detect the candle
   if sensor_dist(FL_LEFT)<sensors(FL_LEFT,2) && abs(sensor_dist(FL_LEFT)-sensor_dist(FL_RIGHT)) <= 2.0
-    control_step = 10;
+    control_step = fnd;
   end
 
   % use the flame sensors to steer the robot towards the candle and approach it
-  if control_step==9
+  if control_step==fwd
     speed(1) = (sensors(FL_LEFT,2) - sensor_dist(FL_LEFT)) / sensors(FL_LEFT,2);
     speed(2) = (sensors(FL_RIGHT,2) - sensor_dist(FL_RIGHT)) / sensors(FL_RIGHT,2);
   end
   
   % drive forward towards the candle until the front line detector is trigered
-  if control_step==10
+  if control_step==fnd
     if sensor_dist(LD_FRONT) > 1.0
       speed = [ 0.25  0.25];
     else
       speed = [ 0.00  0.00];
-      control_step = 10;
+      control_step = fnd;
     end
   end
   
@@ -827,6 +939,14 @@ function result = test_ir_trend(ir_label,sensor_hist)
     result = 1;
   end
   
+end
+
+%Opposite of test_ir_trend function for locating inside corners
+function result = neg_test_ir_trend(ir_label,sensor_hist)
+  result=0;
+  if sensor_hist(1,ir_label) < sensor_hist(2,ir_label) && sensor_hist(2,ir_label) > sensor_hist(3,ir_label) && sensor_hist(3,ir_label) > sensor_hist(4,ir_label)
+    result = 1;
+  end
 end
 
 
